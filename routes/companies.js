@@ -31,12 +31,13 @@ router.get("/:code", async (req, res, next) => {
     )
     // separate company data from invoice data
     const { code, name, description } = comp_result.rows[0];
+    invoice_ids = invoice_result.rows.map(invoice => invoice.id);
     return res.json({
       company: {
         code,
         name,
         description,
-        invoices: invoice_result.rows
+        invoices: invoice_ids
       }
     });
   }
@@ -58,7 +59,7 @@ router.post("/", async (req, res, next) => {
       "INSERT INTO companies VALUES ($1, $2, $3) RETURNING code, name, description",
       [code, name, description]
     );
-    return res.json({ company: result.rows[0] });
+    return res.status(201).json({ company: result.rows[0] });
   }
   catch(err) {
     return next(err);

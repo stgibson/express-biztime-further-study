@@ -60,7 +60,7 @@ router.post("/", async (req, res, next) => {
       "INSERT INTO invoices (comp_code, amt) VALUES ($1, $2) RETURNING id, comp_code, amt, paid, add_date, paid_date",
       [comp_code, amt]
     );
-    return res.json({ invoice: result.rows[0] });
+    return res.status(201).json({ invoice: result.rows[0] });
   }
   catch(err) {
     return next(err);
@@ -77,14 +77,14 @@ router.put("/:id", async (req, res, next) => {
       return next(expressError);
     }
     const result = await db.query(
-      "UPDATE invoices SET amt=$1 WHERE =$2 RETURNING id, comp_code, amt, paid, add_date, paid_date",
+      "UPDATE invoices SET amt=$1 WHERE id=$2 RETURNING id, comp_code, amt, paid, add_date, paid_date",
       [amt, req.params.id]
     );
     // verify found company
     if (!result.rows.length) {
       return next();
     }
-    return res.json({ company: result.rows[0] });
+    return res.json({ invoice: result.rows[0] });
   }
   catch(err) {
     return next(err);

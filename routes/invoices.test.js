@@ -33,12 +33,14 @@ describe("companies routes tests (with setup and cleanup)", () => {
       ]
     );
     await db.query(
-      `INSERT INTO invoices (comp_code, amt) VALUES ($1, $2), ($3, $4)`,
+      `INSERT INTO invoices (comp_code, amt, paid) VALUES ($1, $2, $3), ($4, $5, $6)`,
       [
         test_invoice1.comp_code,
         test_invoice1.amt,
+        false,
         test_invoice2.comp_code,
-        test_invoice2.amt
+        test_invoice2.amt,
+        false
       ]);
   });
 
@@ -128,7 +130,8 @@ describe("companies routes tests (with setup and cleanup)", () => {
     );
     const { id } = result.rows[0];
     const amt = 50;
-    const invoice_data = { amt }
+    const paid = true;
+    const invoice_data = { amt, paid };
     const resp = await request(app).put(`/invoices/${id}`).send(invoice_data);
     const { code: comp_code } = test_company1;
     expect(resp.statusCode).toEqual(200);
@@ -137,16 +140,17 @@ describe("companies routes tests (with setup and cleanup)", () => {
         id,
         comp_code,
         amt,
-        paid: false,
+        paid: true,
         add_date: expect.any(String),
-        paid_date: null
+        paid_date: expect.any(String)
       }
     })
   });
 
   test("get 404 when try to edit invoice with bad id", async () => {
     const amt = 50;
-    const invoice_data = { amt }
+    const paid = true;
+    const invoice_data = { amt, paid }
     const resp = await request(app).put("/invoices/0").send(invoice_data);
     expect(resp.statusCode).toEqual(404);
   });
@@ -156,9 +160,17 @@ describe("companies routes tests (with setup and cleanup)", () => {
       `SELECT id FROM invoices WHERE amt = $1`, [test_invoice1.amt]
     );
     const { id } = result.rows[0];
-    // try creating invoice without sending data
-    const resp1 = await request(app).put(`/invoices/${id}`);
+    // try creating invoice without amt
+    const amt = 50;
+    const paid = true;
+    const invoice_data1 = { paid }
+    const resp1 = await request(app).put(`/invoices/${id}`)
+      .send(invoice_data1);
     expect(resp1.statusCode).toEqual(400);
+    const invoice_data2 = { amt }
+    const resp2 = await request(app).put(`/invoices/${id}`)
+      .send(invoice_data2);
+    expect(resp2.statusCode).toEqual(400);
   });
 
   test("can delete invoice", async () => {

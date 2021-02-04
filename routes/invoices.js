@@ -69,20 +69,52 @@ router.post("/", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const { amt } = req.body;
-    if (!amt) {
+    const { amt, paid } = req.body;
+    if (!amt || paid === undefined) {
       const expressError = new ExpressError(
-        "Require amt in request", 400
+        "Require amt and paid in request", 400
       );
       return next(expressError);
     }
-    const result = await db.query(
-      "UPDATE invoices SET amt=$1 WHERE id=$2 RETURNING id, comp_code, amt, paid, add_date, paid_date",
-      [amt, req.params.id]
+    // get paid status to compare with request's paid
+    let result = await db.query(
+      `SELECT paid FROM invoices WHERE id = $1`,
+      [req.params.id]
     );
-    // verify found company
+    // verify found invoice
     if (!result.rows.length) {
       return next();
+    }
+    const { paid: currPaid } = result.rows[0];
+    // if paid status doesn't change, just update amt
+    if (paid === currPaid) {
+      result = await db.query(
+        `
+          UPDATE invoices SET amt=$1 WHERE id=$2 RETURNING
+            id, comp_code, amt, paid, add_date, paid_date
+        `,
+        [amt, req.params.id]
+      );
+    }
+    // if paid status changes from not paid to paid, set paid_date to current
+    else if (paid && !currPaid) {
+      result = await db.query(
+        `
+          UPDATE invoices SET amt=$1, paid=$2, paid_date=CURRENT_DATE WHERE
+            id=$3 RETURNING id, comp_code, amt, paid, add_date, paid_date
+        `,
+        [amt, paid, req.params.id]
+      );
+    }
+    // if paid status changes from paid to not paid, set paid_date to null
+    else {
+      result = await db.query(
+        `
+          UPDATE invoices SET amt=$1, paid=$2, paid_date=null WHERE
+            id=$3 RETURNING id, comp_code, amt, paid, add_date, paid_date
+        `,
+        [amt, paid, req.params.id]
+      );
     }
     return res.json({ invoice: result.rows[0] });
   }

@@ -74,10 +74,10 @@ describe("companies routes tests (with setup and cleanup)", () => {
   });
 
   test("can create company with valid data", async () => {
-    const code = "new";
     const name = "New Company";
+    const code = "newcompany"
     const description = "This is a new company.";
-    const new_company = { code, name, description }
+    const new_company = { name, description }
     const resp = await request(app).post("/companies").send(new_company);
     expect(resp.statusCode).toEqual(201);
     expect(resp.body).toEqual({
@@ -86,26 +86,21 @@ describe("companies routes tests (with setup and cleanup)", () => {
   });
 
   test("get 400 when try to create company with bad data", async () => {
-    const code = "new";
     const name = "New Company";
     const description = "This is a new company.";
-    // try creating company missing code
-    const new_company1 = { name, description }
+    // try creating company missing name
+    const new_company1 = { description }
     const resp1 = await request(app).post("/companies").send(new_company1);
     expect(resp1.statusCode).toEqual(400);
-    // try creating company missing name
-    const new_company2 = { code, description }
+    // try creating company missing description
+    const new_company2 = { name }
     const resp2 = await request(app).post("/companies").send(new_company2);
     expect(resp2.statusCode).toEqual(400);
-    // try creating company missing description
-    const new_company3 = { code, name }
-    const resp3 = await request(app).post("/companies").send(new_company3);
-    expect(resp3.statusCode).toEqual(400);
   });
 
   test("can edit company with valid data", async () => {
     const code = test_company1.code;
-    const name = "New Company";
+    const name = "New Company!";
     const description = "This is a new company.";
     const new_company = { name, description }
     const resp = await request(app).put(`/companies/${code}`)

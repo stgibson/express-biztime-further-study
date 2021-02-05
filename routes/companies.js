@@ -65,7 +65,7 @@ router.post("/", async (req, res, next) => {
     const { name, description } = req.body;
     if (!name || !description) {
       const expressError = new ExpressError(
-        "Require code, name, and description in request", 400
+        "Require name and description in request", 400
       );
       return next(expressError);
     }

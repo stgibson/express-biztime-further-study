@@ -4,18 +4,21 @@ const app = require("../app");
 const db = require("../db");
 
 const test_company1 = {
-  code: "test1",
+  code: "testcomp1",
   name: "Test Company 1",
   description: "This is the first test company"
 };
 const test_company2 = {
-  code: "test2",
+  code: "testcomp2",
   name: "Test Company 2",
   description: "This is the second test company"
 };
 
 const test_invoice1 = { comp_code: test_company1.code, amt: 100 };
 const test_invoice2 = { comp_code: test_company1.code, amt: 200 };
+
+const test_industry1 = { code: "testind1", industry: "Test Industry 1" };
+const test_industry2 = { code: "testind2", industry: "Test Industry 2" };
 
 describe("companies routes tests (with setup and cleanup)", () => {
   // add test data
@@ -40,6 +43,27 @@ describe("companies routes tests (with setup and cleanup)", () => {
         test_invoice2.comp_code,
         test_invoice2.amt
       ]);
+    await db.query(
+      `INSERT INTO industries VALUES ($1, $2), ($3, $4)`,
+      [
+        test_industry1.code,
+        test_industry1.industry,
+        test_industry2.code,
+        test_industry2.industry
+      ]
+    );
+    await db.query(
+      `
+        INSERT INTO companies_industries (comp_code, ind_code) VALUES
+        ($1, $2), ($3, $4)
+      `,
+      [
+        test_company1.code,
+        test_industry1.code,
+        test_company1.code,
+        test_industry2.code
+      ]
+    );
   });
 
   test("can get all companies", async () => {
@@ -63,7 +87,8 @@ describe("companies routes tests (with setup and cleanup)", () => {
         code,
         name,
         description,
-        invoices: [expect.any(Number), expect.any(Number)]
+        invoices: [expect.any(Number), expect.any(Number)],
+        industries: [test_industry1.industry, test_industry2.industry]
       }
     })
   });
@@ -150,7 +175,10 @@ describe("companies routes tests (with setup and cleanup)", () => {
 
   // clean out test data
   afterEach(async () => {
+    await db.query(`DELETE FROM invoices`);
+    await db.query(`DELETE FROM companies_industries`);
     await db.query(`DELETE FROM companies`);
+    await db.query(`DELETE FROM industries`);
   });
 
   afterAll(async () => {

@@ -29,16 +29,29 @@ router.get("/:code", async (req, res, next) => {
     const invoice_result = await db.query(
       "SELECT id FROM invoices i JOIN companies c ON i.comp_code=c.code WHERE code=$1",
       [req.params.code]
-    )
+    );
     // separate company data from invoice data
     const { code, name, description } = comp_result.rows[0];
-    invoice_ids = invoice_result.rows.map(invoice => invoice.id);
+    const invoice_ids = invoice_result.rows.map(invoice => invoice.id);
+    // get list of industries company is in
+    const industry_result = await db.query(
+      `
+        SELECT industry FROM industries i JOIN companies_industries ci ON
+          i.code = ci.ind_code JOIN companies c ON ci.comp_code = c.code WHERE
+          c.code = $1
+      `,
+      [req.params.code]
+    );
+    const industries = industry_result.rows.map(industry_obj => {
+      return industry_obj.industry;
+    });
     return res.json({
       company: {
         code,
         name,
         description,
-        invoices: invoice_ids
+        invoices: invoice_ids,
+        industries
       }
     });
   }
